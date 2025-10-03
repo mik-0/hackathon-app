@@ -1,4 +1,6 @@
 import { protectedProcedure, publicProcedure, router } from "../lib/trpc";
+import { studentRouter } from "./student.router";
+import z from "zod";
 
 export const appRouter = router({
 	healthCheck: publicProcedure.query(() => {
@@ -10,5 +12,22 @@ export const appRouter = router({
 			user: ctx.session.user,
 		};
 	}),
+	helloWorld: publicProcedure.query(() => {
+		return "Hello World";
+	}),
+	testPost: publicProcedure
+		.input(
+			z.object({
+				name: z.string(),
+			})
+		)
+		.mutation(({ input }) => {
+			return {
+				message: "Hello World",
+			};
+		}),
+
+	// 🎓 Nested router - all student endpoints under "students.*"
+	students: studentRouter,
 });
 export type AppRouter = typeof appRouter;

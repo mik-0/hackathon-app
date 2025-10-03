@@ -1,5 +1,4 @@
 "use client";
-import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 import { useQuery } from "@tanstack/react-query";
 import { trpc } from "@/utils/trpc";
@@ -13,7 +12,9 @@ export default function Dashboard({
 
 	return (
 		<>
-			<p>API: {privateData.data?.message}</p>
+			<p className="text-2xl font-bold">
+				API: {privateData.data?.message}
+			</p>
 		</>
 	);
 }
