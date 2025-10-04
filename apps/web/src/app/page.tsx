@@ -29,6 +29,9 @@ export default function Home() {
 	const [transcriptionStatus, setTranscriptionStatus] = useState<
 		"idle" | "uploading" | "processing" | "complete" | "error"
 	>("idle");
+	const [analysisStatus, setAnalysisStatus] = useState<
+		"idle" | "processing" | "complete" | "error"
+	>("idle");
 
 	const segmentRefs = useRef<(HTMLDivElement | null)[]>([]);
 	const toastIdRef = useRef<string | number | null>(null);
@@ -48,11 +51,15 @@ export default function Home() {
 		},
 	});
 
+	const { mutateAsync: startAnalysis } = useMutation(
+    trpc.analysis.startAnalysis.mutationOptions()
+	);
+
 	const recorderControls = useVoiceVisualizer({});
 	const currentTime = recorderControls.currentAudioTime;
 	const duration = recorderControls.duration;
 
-	// Auto-poll transcription status using React Query's refetchInterval
+	// Auto-poll transcription status
 	const { data: transcriptionData } = useQuery(
 		trpc.mediaFiles.getTranscriptionStatus.queryOptions(
 			{
@@ -60,7 +67,20 @@ export default function Home() {
 			},
 			{
 				enabled: !!mediaFileId && transcriptionStatus === "processing",
-				refetchInterval: 3000, // Poll every 3 seconds
+				refetchInterval: 3000,
+			}
+		)
+	);
+
+	// Auto-poll analysis status
+	const { data: analysisData } = useQuery(
+		trpc.analysis.getAnalysisStatus.queryOptions(
+			{
+				id: mediaFileId!,
+			},
+			{
+				enabled: !!mediaFileId && analysisStatus === "processing",
+				refetchInterval: 3000,
 			}
 		)
 	);
@@ -75,17 +95,16 @@ export default function Home() {
 		) {
 			setTranscriptionStatus("complete");
 
-			// Transform transcript segments to display format
 			const transformedSegments =
 				transcriptionData.transcript.segments.map((seg: any) => ({
 					startTime: seg.start,
 					endTime: seg.end,
 					segment: seg.text,
-					isExtremist: false, // This will be set by analysis
+					isExtremist: seg.isExtremist || false,
 				}));
 
 			setSegments(transformedSegments);
-			toast.success("Transcription complete! 🎉", {
+			toast.success("Transcription complete!", {
 				id: toastIdRef.current ?? undefined,
 			});
 		} else if (transcriptionData.status === "error") {
@@ -95,6 +114,34 @@ export default function Home() {
 			});
 		}
 	}, [transcriptionData]);
+
+	// Handle analysis status changes
+	useEffect(() => {
+		if (!analysisData) return;
+
+		if (analysisData.analysisStatus === "complete" && analysisData.transcript) {
+			setAnalysisStatus("complete");
+
+			const transformedSegments = analysisData.transcript.segments.map(
+				(seg: any) => ({
+					startTime: seg.start,
+					endTime: seg.end,
+					segment: seg.text,
+					isExtremist: seg.isExtremist || false,
+				})
+			);
+
+			setSegments(transformedSegments);
+			toast.success("Analysis complete!", {
+				id: toastIdRef.current ?? undefined,
+			});
+		} else if (analysisData.analysisStatus === "error") {
+			setAnalysisStatus("error");
+			toast.error("Analysis failed", {
+				id: toastIdRef.current ?? undefined,
+			});
+		}
+	}, [analysisData]);
 
 	const handleDrop = async (files: File[]) => {
 		setTranscriptionStatus("uploading");
@@ -113,7 +160,6 @@ export default function Home() {
 			setMediaFileId(result.file.id);
 			setAudioFile(files[0]);
 			recorderControls.setPreloadedAudioBlob(files[0]);
-			// recorderControls.startAudioPlayback();
 
 			setTranscriptionStatus("processing");
 			toast.loading("Transcribing audio... This may take a while", {
@@ -147,49 +193,49 @@ export default function Home() {
 		return currentTime >= startTime && currentTime < endTime;
 	};
 
-	// const segments = [
-	// 	{
-	// 		startTime: 0,
-	// 		endTime: 4,
-	// 		segment:
-	// 			"Welcome everyone to today's discussion about community safety and security measures.",
-	// 		isExtremist: false,
-	// 	},
-	// 	{
-	// 		startTime: 4,
-	// 		endTime: 8,
-	// 		segment:
-	// 			"We need to take immediate action against those who threaten our way of life and values.",
-	// 		isExtremist: true,
-	// 	},
-	// 	{
-	// 		startTime: 8,
-	// 		endTime: 12,
-	// 		segment:
-	// 			"Education and dialogue are the best tools we have for building understanding between different groups.",
-	// 	},
-	// 	{
-	// 		startTime: 12,
-	// 		endTime: 16,
-	// 		segment:
-	// 			"They are the enemy and must be stopped by any means necessary before they destroy everything we hold dear.",
-	// 		isExtremist: true,
-	// 	},
-	// 	{
-	// 		startTime: 16,
-	// 		endTime: 20,
-	// 		segment:
-	// 			"Let's focus on constructive solutions that bring people together rather than divide them.",
-	// 	},
-	// 	{
-	// 		startTime: 20,
-	// 		endTime: 24,
-	// 		segment:
-	// 			"Thank you for listening and remember to stay engaged in your local community initiatives.",
-	// 	},
-	// ];
+	const handleStartAnalysis = async () => {
+		if (!mediaFileId) return;
 
-	// Auto-scroll to active segment
+		setAnalysisStatus("processing");
+		const toastId = toast.loading("Analyzing content...");
+		toastIdRef.current = toastId;
+
+		try {
+			await startAnalysis({ id: mediaFileId });
+		} catch (error) {
+			toast.error("Analysis failed: " + error, { id: toastId });
+			setAnalysisStatus("error");
+		}
+	};
+
+	const handleExportData = () => {
+		if (!segments.length) return;
+
+		const exportData = {
+			filename: audioFile?.name,
+			analyzedAt: new Date().toISOString(),
+			segments: segments.map((seg) => ({
+				startTime: seg.startTime,
+				endTime: seg.endTime,
+				text: seg.segment,
+				isExtremist: seg.isExtremist,
+			})),
+			summary: {
+				totalSegments: segments.length,
+				extremistSegments: segments.filter((s) => s.isExtremist).length,
+			},
+		};
+
+		const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+			type: "application/json",
+		});
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement("a");
+		a.href = url;
+		a.download = `analysis-${audioFile?.name || "export"}.json`;
+		a.click();
+		URL.revokeObjectURL(url);
+	};
 
 	useEffect(() => {
 		const activeIndex = segments.findIndex((seg) =>
@@ -243,7 +289,6 @@ export default function Home() {
 								height={100}
 								isControlPanelShown={false}
 							/>
-							{/* Waveform overlay for extremist segments */}
 							{duration > 0 && (
 								<div className="absolute inset-0 pointer-events-none">
 									{segments.map((seg, index) => {
@@ -325,29 +370,44 @@ export default function Home() {
 			)}
 			{audioFile && (
 				<div className="flex flex-col items-center gap-4">
-					{/* Status indicator */}
 					{transcriptionStatus === "processing" && (
 						<div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
 							<div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
 							<span>Transcribing audio...</span>
 						</div>
 					)}
+					{analysisStatus === "processing" && (
+						<div className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
+							<div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+							<span>Analyzing content...</span>
+						</div>
+					)}
 					{transcriptionStatus === "error" && (
 						<div className="text-red-600 dark:text-red-400">
-							❌ Transcription failed
+							Transcription failed
+						</div>
+					)}
+					{analysisStatus === "error" && (
+						<div className="text-red-600 dark:text-red-400">
+							Analysis failed
 						</div>
 					)}
 
 					<div className="flex justify-center gap-2">
 						<Button
 							variant="gradient"
-							disabled={transcriptionStatus !== "complete"}
+							disabled={
+								transcriptionStatus !== "complete" ||
+								analysisStatus === "processing"
+							}
+							onClick={handleStartAnalysis}
 						>
 							<Sparkles className="size-4" /> Start Analysis
 						</Button>
 						<Button
 							variant="outline"
-							disabled={transcriptionStatus !== "complete"}
+							disabled={analysisStatus !== "complete"}
+							onClick={handleExportData}
 						>
 							<Download className="size-4" /> Export Data (.json)
 						</Button>

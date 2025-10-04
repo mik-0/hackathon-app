@@ -1,5 +1,6 @@
 import re
 import sys
+import os
 import torch
 from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
 
@@ -8,9 +9,35 @@ class HateSpeechClassifier:
 
     def __init__(self, model_path='./hate_speech_model'):
         """Initialize the classifier with trained model"""
-        print(f"Loading model from {model_path}...")
-        self.tokenizer = DistilBertTokenizer.from_pretrained(model_path)
-        self.model = DistilBertForSequenceClassification.from_pretrained(model_path)
+        # Convert to absolute path
+        model_path = os.path.abspath(model_path)
+
+        # Check if model exists
+        if not os.path.exists(model_path) or not os.path.isfile(os.path.join(model_path, 'config.json')):
+            print(f"❌ Model not found at {model_path}")
+            print("\nYou need to train the model first using train_distilbert.py")
+            print("\nSteps:")
+            print("1. Download the dataset from: https://www.kaggle.com/datasets/mrmorj/hate-speech-and-offensive-language-dataset")
+            print("2. Save it as 'hate_speech_offensive.csv'")
+            print("3. Run: python train_distilbert.py")
+            print("\nAlternatively, for quick testing, I can use a base DistilBERT model (type 'yes'):")
+
+            response = input().strip().lower()
+            if response == 'yes':
+                print("\n⚠️  Using base DistilBERT for demonstration (not trained on hate speech)")
+                model_path = 'distilbert-base-uncased'
+                self.tokenizer = DistilBertTokenizer.from_pretrained(model_path)
+                self.model = DistilBertForSequenceClassification.from_pretrained(
+                    model_path,
+                    num_labels=3
+                )
+            else:
+                sys.exit(1)
+        else:
+            print(f"Loading model from {model_path}...")
+            self.tokenizer = DistilBertTokenizer.from_pretrained(model_path, local_files_only=True)
+            self.model = DistilBertForSequenceClassification.from_pretrained(model_path, local_files_only=True)
+
         self.model.eval()
 
         # Class labels
