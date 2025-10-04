@@ -4,41 +4,6 @@ import z from "zod";
 import { MediaFile } from "@/db/models/media_file.model";
 import fs from "fs/promises";
 
-/**
- * 🎓 STUDENT ROUTER - tRPC Beginner's Guide
- *
- * BACKEND (this file):
- * - Use .query() for READ operations (GET)
- * - Use .mutation() for WRITE operations (POST/PUT/DELETE)
- * - Use .input() with Zod for validation
- * - Use publicProcedure (no auth) or protectedProcedure (requires login)
- * - Import Mongoose models directly, no need for context
- *
- * FRONTEND usage:
- *
- * // Get all students
- * const students = useQuery(trpc.students.getAll.queryOptions());
- *
- * // Get one student
- * const student = useQuery(trpc.students.getById.queryOptions({ id: "123" }));
- *
- * // Create student (mutation)
- * const createStudent = useMutation(trpc.students.create.mutationOptions());
- * createStudent.mutate({ name: "John", studentNumber: 12345, email: "john@example.com" });
- *
- * // Update student
- * const updateStudent = useMutation(trpc.students.update.mutationOptions());
- * updateStudent.mutate({ id: "123", name: "Jane" });
- *
- * // Delete student
- * const deleteStudent = useMutation(trpc.students.delete.mutationOptions());
- * deleteStudent.mutate({ id: "123" });
- *
- * // Search students
- * const results = useQuery(trpc.students.search.queryOptions({ query: "John" }));
- */
-
-
 export const mediaFileRouter = router({
 	// READ: Get all media files
 	getAll: publicProcedure.query(async () => {

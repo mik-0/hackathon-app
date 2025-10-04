@@ -40,10 +40,11 @@ const transcriptSchema = new Schema<ITranscript>(
 		mediaId: { type: Schema.Types.ObjectId, ref: "MediaFile", required: true },	// Reference to MediaFile
 		segments: { type: [segmentSchema], required: true },
 		language: { type: String, required: true, default: "en" },
-		createdAt: { type: Date, required: true, default: Date.now },
-		updatedAt: { type: Date, required: true, default: Date.now },
 	},
-	{ collection: "transcripts" }
+	{
+		collection: "transcripts",
+		timestamps: true
+	 }
 );
 
 const Transcript = model<ITranscript>("Transcript", transcriptSchema);

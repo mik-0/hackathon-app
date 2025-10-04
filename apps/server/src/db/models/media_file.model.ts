@@ -25,10 +25,11 @@ const mediaFileSchema  = new Schema<IMediaFile>(
 		durationSec: { type: Number },
 		status: { type: String, enum: ["in-progress", "complete", "error"], default: "in-progress" },
 		language: { type: String, required: true, default: "en" },
-		createdAt: { type: Date, required: true, default: Date.now },
-		updatedAt: { type: Date, required: true, default: Date.now },
 	},
-	{ collection: "media_files" }
+	{
+		collection: "media_files",
+		timestamps: true
+	 }
 );
 
 const MediaFile = model<IMediaFile>("MediaFile", mediaFileSchema);
