@@ -29,6 +29,9 @@ export default function Home() {
 	const [transcriptionStatus, setTranscriptionStatus] = useState<
 		"idle" | "uploading" | "processing" | "complete" | "error"
 	>("idle");
+	const [analysisStatus, setAnalysisStatus] = useState<
+		"idle" | "analyzing" | "complete" | "error"
+	>("idle");
 
 	const segmentRefs = useRef<(HTMLDivElement | null)[]>([]);
 	const toastIdRef = useRef<string | number | null>(null);
@@ -102,6 +105,11 @@ export default function Home() {
 		toastIdRef.current = toastId;
 
 		try {
+			setAudioFile(null);
+			setMediaFileId(null);
+			setSegments([]);
+			setAnalysisStatus("idle");
+			setTranscriptionStatus("idle");
 			const result = await uploadFile(files[0]);
 
 			if (!result.success) {
@@ -146,50 +154,6 @@ export default function Home() {
 	const isSegmentActive = (startTime: number, endTime: number) => {
 		return currentTime >= startTime && currentTime < endTime;
 	};
-
-	// const segments = [
-	// 	{
-	// 		startTime: 0,
-	// 		endTime: 4,
-	// 		segment:
-	// 			"Welcome everyone to today's discussion about community safety and security measures.",
-	// 		isExtremist: false,
-	// 	},
-	// 	{
-	// 		startTime: 4,
-	// 		endTime: 8,
-	// 		segment:
-	// 			"We need to take immediate action against those who threaten our way of life and values.",
-	// 		isExtremist: true,
-	// 	},
-	// 	{
-	// 		startTime: 8,
-	// 		endTime: 12,
-	// 		segment:
-	// 			"Education and dialogue are the best tools we have for building understanding between different groups.",
-	// 	},
-	// 	{
-	// 		startTime: 12,
-	// 		endTime: 16,
-	// 		segment:
-	// 			"They are the enemy and must be stopped by any means necessary before they destroy everything we hold dear.",
-	// 		isExtremist: true,
-	// 	},
-	// 	{
-	// 		startTime: 16,
-	// 		endTime: 20,
-	// 		segment:
-	// 			"Let's focus on constructive solutions that bring people together rather than divide them.",
-	// 	},
-	// 	{
-	// 		startTime: 20,
-	// 		endTime: 24,
-	// 		segment:
-	// 			"Thank you for listening and remember to stay engaged in your local community initiatives.",
-	// 	},
-	// ];
-
-	// Auto-scroll to active segment
 
 	useEffect(() => {
 		const activeIndex = segments.findIndex((seg) =>

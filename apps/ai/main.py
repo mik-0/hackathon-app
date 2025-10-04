@@ -35,7 +35,7 @@ transcription_service = TranscriptionService()
 async def startup_event():
     """Initialize models on startup"""
     # Get configuration from environment variables
-    model_size = os.getenv("WHISPER_MODEL_SIZE", "base")
+    model_size = os.getenv("WHISPER_MODEL_SIZE", "medium.en")
     device = os.getenv("WHISPER_DEVICE", "cpu")
     compute_type = os.getenv("WHISPER_COMPUTE_TYPE", "int8")
 

@@ -16,7 +16,7 @@ class TranscriptionService:
         os.makedirs(self.temp_upload_dir, exist_ok=True)
 
     def initialize_whisper(
-        self, model_size: str = "base", device: str = "cpu", compute_type: str = "int8"
+        self, model_size: str = "medium", device: str = "cpu", compute_type: str = "int8"
     ):
         """Initialize the Whisper model"""
         if self.whisper_model is None:

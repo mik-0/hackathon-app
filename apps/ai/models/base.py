@@ -7,7 +7,7 @@ from typing import Any, Dict
 class BaseModel(ABC):
     """Abstract base class for AI models"""
 
-    def __init__(self, model_size: str = "base", device: str = "cpu"):
+    def __init__(self, model_size: str = "medium", device: str = "cpu"):
         self.model_size = model_size
         self.device = device
         self.model = None
