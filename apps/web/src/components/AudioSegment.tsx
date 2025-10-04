@@ -4,6 +4,14 @@ import React from "react";
 import { IoIosWarning } from "react-icons/io";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
+const formatTime = (seconds: number): string => {
+	const mins = Math.floor(seconds / 60);
+	const secs = Math.floor(seconds % 60);
+	return `${mins.toString().padStart(2, "0")}:${secs
+		.toString()
+		.padStart(2, "0")}`;
+};
+
 const AudioSegment = ({
 	startTime,
 	endTime,
@@ -22,7 +30,7 @@ const AudioSegment = ({
 	return (
 		<div
 			className={cn(
-				"flex gap-4 w-full justify-center items-start transition-all max-w-[80%] mx-auto",
+				"flex gap-4 w-full justify-center items-start transition-all max-w-[85%] mx-auto px-4",
 				onSeek && "cursor-pointer hover:bg-gray-800/50 rounded-md py-2"
 			)}
 			onClick={onSeek}
@@ -33,7 +41,7 @@ const AudioSegment = ({
 					isActive && "text-blue-500"
 				)}
 			>
-				{startTime}:00 - {endTime}:00
+				{formatTime(startTime)} - {formatTime(endTime)}
 			</p>
 			<div
 				className={cn(

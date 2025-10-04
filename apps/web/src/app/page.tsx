@@ -22,6 +22,7 @@ export default function Home() {
 
 	const recorderControls = useVoiceVisualizer({});
 	const currentTime = recorderControls.currentAudioTime;
+	const duration = recorderControls.duration;
 
 	const handleDrop = (files: File[]) => {
 		console.log(files);
@@ -129,39 +130,70 @@ export default function Home() {
 			</Dropzone>
 			{audioFile && (
 				<Card className="w-full">
-					<CardHeader className="flex justify-between items-center">
-						<CardTitle>Audio ({audioFile.name})</CardTitle>
-						<div className="flex items-center gap-2">
+					<CardHeader>
+						<CardTitle>
+							Audio{"  "}
+							<span className=" text-gray-500 font-medium">
+								({audioFile.name})
+							</span>
+						</CardTitle>
+					</CardHeader>
+					<CardContent className="w-full">
+						<div className="relative">
+							<VoiceVisualizer
+								width="100%"
+								controls={recorderControls}
+								height={100}
+								isControlPanelShown={false}
+							/>
+							{/* Waveform overlay for extremist segments */}
+							{duration > 0 && (
+								<div className="absolute inset-0 pointer-events-none">
+									{segments
+										.filter((seg) => seg.isExtremist)
+										.map((seg, index) => {
+											const startPercent =
+												(seg.startTime / duration) *
+												100;
+											const widthPercent =
+												((seg.endTime - seg.startTime) /
+													duration) *
+												100;
+											return (
+												<div
+													key={index}
+													className="absolute top-0 bottom-0 bg-red-500/20"
+													style={{
+														left: `${startPercent}%`,
+														width: `${widthPercent}%`,
+													}}
+												/>
+											);
+										})}
+								</div>
+							)}
+						</div>
+						<div className="flex justify-center mt-4">
 							{!recorderControls.isPausedRecordedAudio ? (
 								<Button
 									variant="outline"
-									size="icon"
 									onClick={() =>
 										recorderControls.stopAudioPlayback()
 									}
 								>
-									<Pause className="size-4" />
+									<Pause className="size-4" /> Pause
 								</Button>
 							) : (
 								<Button
 									variant="outline"
-									size="icon"
 									onClick={() =>
 										recorderControls.startAudioPlayback()
 									}
 								>
-									<Play className="size-4" />
+									<Play className="size-4" /> Play
 								</Button>
 							)}
 						</div>
-					</CardHeader>
-					<CardContent className="w-full">
-						<VoiceVisualizer
-							width="100%"
-							controls={recorderControls}
-							height={100}
-							isControlPanelShown={false}
-						/>
 						<div className="flex flex-col gap-2 mt-6 max-h-[250px] overflow-y-auto">
 							{segments.map((seg, index) => (
 								<div
