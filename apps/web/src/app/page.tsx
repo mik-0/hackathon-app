@@ -10,9 +10,10 @@ import {
 } from "@/components/ui/shadcn-io/dropzone";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Pause, Play, Sparkles } from "lucide-react";
+import { Download, Pause, Play, Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import AudioSegment from "@/components/AudioSegment";
+import WaveformSegmentOverlay from "@/components/WaveformSegmentOverlay";
 
 export default function Home() {
 	const healthCheck = useQuery(trpc.healthCheck.queryOptions());
@@ -149,27 +150,32 @@ export default function Home() {
 							{/* Waveform overlay for extremist segments */}
 							{duration > 0 && (
 								<div className="absolute inset-0 pointer-events-none">
-									{segments
-										.filter((seg) => seg.isExtremist)
-										.map((seg, index) => {
-											const startPercent =
-												(seg.startTime / duration) *
-												100;
-											const widthPercent =
-												((seg.endTime - seg.startTime) /
-													duration) *
-												100;
-											return (
-												<div
-													key={index}
-													className="absolute top-0 bottom-0 bg-red-500/20"
-													style={{
-														left: `${startPercent}%`,
-														width: `${widthPercent}%`,
-													}}
-												/>
-											);
-										})}
+									{segments.map((seg, index) => {
+										const startPercent =
+											(seg.startTime / duration) * 100;
+										const widthPercent =
+											((seg.endTime - seg.startTime) /
+												duration) *
+											100;
+										return (
+											<WaveformSegmentOverlay
+												key={index}
+												startTime={seg.startTime}
+												endTime={seg.endTime}
+												text={seg.segment}
+												isExtremist={
+													seg.isExtremist || false
+												}
+												startPercent={startPercent}
+												widthPercent={widthPercent}
+												onSeek={() =>
+													handleSeekToTime(
+														seg.startTime
+													)
+												}
+											/>
+										);
+									})}
 								</div>
 							)}
 						</div>
@@ -221,9 +227,14 @@ export default function Home() {
 					</CardContent>
 				</Card>
 			)}
-			<Button variant="gradient">
-				<Sparkles className="size-4" /> Start Analysis
-			</Button>
+			<div className="flex justify-center gap-2">
+				<Button variant="gradient">
+					<Sparkles className="size-4" /> Start Analysis
+				</Button>
+				<Button variant="outline">
+					<Download className="size-4" /> Export Data (.json)
+				</Button>
+			</div>
 		</div>
 	);
 }
