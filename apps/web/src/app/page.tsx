@@ -149,6 +149,11 @@ export default function Home() {
 		toastIdRef.current = toastId;
 
 		try {
+			setAudioFile(null);
+			setMediaFileId(null);
+			setSegments([]);
+			setAnalysisStatus("idle");
+			setTranscriptionStatus("idle");
 			const result = await uploadFile(files[0]);
 
 			if (!result.success) {
