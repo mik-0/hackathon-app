@@ -404,7 +404,7 @@ const app = new Elysia({ adapter: node() })
 						}
 					);
 
-					const extremistCount = file.transcript.segments.filter((s: { isExtremist: boolean; }) => s.isExtremist).length;
+					const extremistCount = file.transcript.segments.filter((s: { isExtremist?: boolean; }) => Boolean(s.isExtremist)).length;
 					console.log(`Analysis complete for ${file.filename}: ${extremistCount}/${file.transcript.segments.length} segments flagged as extremist`);
 
 				} catch (error) {
