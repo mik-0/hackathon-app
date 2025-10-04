@@ -15,7 +15,6 @@ export class LemonadeService {
   constructor(config: LemonadeConfig) {
     this.config = {
       timeout: 30000,
-      model: 'llama2',
       ...config,
     };
   }
@@ -69,7 +68,7 @@ export class LemonadeService {
 Text to analyze: ${text}`;
 
     try {
-      const response = await fetch(`${this.config.baseUrl}/v1/chat/completions`, {
+      const response = await fetch(`${this.config.baseUrl.replace(/\/$/, '')}/api/v1/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

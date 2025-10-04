@@ -17,6 +17,7 @@ import WaveformSegmentOverlay from "@/components/WaveformSegmentOverlay";
 
 export default function Home() {
 	const [audioFile, setAudioFile] = useState<File | null>(null);
+	const [modelType, setModelType] = useState<'BERT' | 'LLM' | 'Both'>('BERT');
 	const [mediaFileId, setMediaFileId] = useState<string | null>(null);
 	const [segments, setSegments] = useState<
 		{
@@ -255,15 +256,28 @@ export default function Home() {
 		}
 	}, [currentTime]);
 
-	return (
-		<div className="container mx-auto max-w-3xl px-4 space-y-8 py-8 flex flex-col items-center">
-			<div className="self-start">
-				<h1 className="text-2xl font-bold">Extremism Detector</h1>
-				<p>
-					Upload an audio or video file to detect potential extremist
-					segments.
-				</p>
-			</div>
+	 return (
+	 	<div className="container mx-auto max-w-3xl px-4 space-y-8 py-8 flex flex-col items-center">
+	 		<div className="self-start">
+	 			<h1 className="text-2xl font-bold">Extremism Detector</h1>
+	 			<p>
+	 				Upload an audio or video file to detect potential extremist
+	 				segments.
+	 			</p>
+	 		</div>
+	 		<div className="w-full flex flex-col sm:flex-row items-center gap-4 mb-2">
+	 			<label htmlFor="model-select" className="font-medium">Model:</label>
+	 			<select
+	 				id="model-select"
+	 				className="border rounded px-2 py-1"
+	 				value={modelType}
+	 				onChange={e => setModelType(e.target.value as 'BERT' | 'LLM' | 'Both')}
+	 			>
+	 				<option value="BERT">BERT</option>
+	 				<option value="LLM">LLM</option>
+	 				<option value="Both">Both</option>
+	 			</select>
+	 		</div>
 			<Dropzone
 				accept={{ "audio/*": [] }}
 				maxFiles={1}
