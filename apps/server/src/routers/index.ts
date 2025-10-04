@@ -1,6 +1,7 @@
 import { protectedProcedure, publicProcedure, router } from "../lib/trpc";
 import { studentRouter } from "./student.router";
 import { mediaFileRouter } from "./media_file.router";
+import { analysisRouter } from "./analysis.router";  // Add this
 import z from "zod";
 
 export const appRouter = router({
@@ -28,9 +29,8 @@ export const appRouter = router({
 			};
 		}),
 
-	// 🎓 Nested router - all student endpoints under "students.*"
 	students: studentRouter,
-	// 📁 Media file endpoints under "mediaFiles.*"
 	mediaFiles: mediaFileRouter,
+	analysis: analysisRouter,  // Add this
 });
 export type AppRouter = typeof appRouter;
