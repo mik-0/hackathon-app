@@ -57,22 +57,21 @@ async def transcribe_audio(
         )
 
     # Save uploaded file temporarily
-    temp_file_path = os.path.join(
+    file_path = os.path.join(
         transcription_service.temp_upload_dir, file.filename
     )
 
     try:
         # Save the file
-        with open(temp_file_path, "wb") as buffer:
+        with open(file_path, "wb") as buffer:
             content = await file.read()
             buffer.write(content)
 
         # Transcribe
         result = await transcription_service.transcribe_audio(
-            audio_path=temp_file_path,
+            audio_path=file_path,
             beam_size=beam_size,
             language=language,
-            word_timestamps=word_timestamps,
         )
 
         return result
@@ -80,9 +79,9 @@ async def transcribe_audio(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
 
-    finally:
-        # Cleanup temp file
-        transcription_service.cleanup_temp_file(temp_file_path)
+    # finally:
+    #     # Cleanup temp file
+    #     transcription_service.cleanup_temp_file(file_path)
 
 
 @router.get("/health")

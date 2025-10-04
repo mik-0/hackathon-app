@@ -41,13 +41,15 @@ const AudioSegment = ({
 					isActive && "text-blue-500"
 				)}
 			>
-				{formatTime(startTime)} - {formatTime(endTime)}
+				{formatTime(startTime)} <span className="text-gray-600">-</span>{" "}
+				{formatTime(endTime)}
 			</p>
 			<div
 				className={cn(
 					"text-gray-500 flex items-center gap-3 shrink",
-					isActive && "text-white",
-					isExtremist && "text-red-200"
+					isActive && !isExtremist && "text-white",
+					isActive && isExtremist && "text-red-200",
+					!isActive && isExtremist && "text-red-200/50"
 				)}
 			>
 				{segment}
@@ -59,7 +61,11 @@ const AudioSegment = ({
 						<TooltipTrigger>
 							<IoIosWarning
 								size={16}
-								className="text-red-400 min-w-[50px]"
+								className={cn(
+									"min-w-[50px]",
+									isActive && "text-red-400",
+									!isActive && "text-red-300/50"
+								)}
 							/>
 						</TooltipTrigger>
 						<TooltipContent>

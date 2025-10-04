@@ -29,8 +29,8 @@ class TranscriptionService:
         self,
         audio_path: str,
         beam_size: int = 5,
-        language: Optional[str] = None,
-        word_timestamps: bool = True,
+        language: Optional[str] = "en",
+        word_timestamps: bool = False,
     ) -> Dict[str, Any]:
         """
         Transcribe an audio file
