@@ -38,7 +38,9 @@ const AudioSegment = ({
 			<p
 				className={cn(
 					"text-gray-500 whitespace-nowrap",
-					isActive && "text-blue-500"
+					isActive && !isExtremist && "text-blue-500",
+					isActive && isExtremist && "text-red-200",
+					!isActive && isExtremist && "text-red-200/50"
 				)}
 			>
 				{formatTime(startTime)} <span className="text-gray-600">-</span>{" "}

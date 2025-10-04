@@ -1,5 +1,5 @@
 "use client";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { trpc } from "@/utils/trpc";
 import { useVoiceVisualizer, VoiceVisualizer } from "react-voice-visualizer";
 import { useState, useEffect, useRef } from "react";
@@ -16,23 +16,118 @@ import AudioSegment from "@/components/AudioSegment";
 import WaveformSegmentOverlay from "@/components/WaveformSegmentOverlay";
 
 export default function Home() {
-	const healthCheck = useQuery(trpc.healthCheck.queryOptions());
-
 	const [audioFile, setAudioFile] = useState<File | null>(null);
+	const [mediaFileId, setMediaFileId] = useState<string | null>(null);
+	const [segments, setSegments] = useState<
+		{
+			startTime: number;
+			endTime: number;
+			segment: string;
+			isExtremist: boolean;
+		}[]
+	>([]);
+	const [transcriptionStatus, setTranscriptionStatus] = useState<
+		"idle" | "uploading" | "processing" | "complete" | "error"
+	>("idle");
+
 	const segmentRefs = useRef<(HTMLDivElement | null)[]>([]);
+	const toastIdRef = useRef<string | number | null>(null);
+
+	const { mutateAsync: uploadFile } = useMutation({
+		mutationFn: async (file: File) => {
+			const formData = new FormData();
+			formData.append("file", file);
+			const response = await fetch(
+				`${process.env.NEXT_PUBLIC_SERVER_URL}/api/upload`,
+				{
+					method: "POST",
+					body: formData,
+				}
+			);
+			return response.json();
+		},
+	});
 
 	const recorderControls = useVoiceVisualizer({});
 	const currentTime = recorderControls.currentAudioTime;
 	const duration = recorderControls.duration;
 
-	const handleDrop = (files: File[]) => {
-		console.log(files);
-		setAudioFile(files[0]);
-		recorderControls.setPreloadedAudioBlob(files[0]);
-		recorderControls.startAudioPlayback();
+	// Auto-poll transcription status using React Query's refetchInterval
+	const { data: transcriptionData } = useQuery(
+		trpc.mediaFiles.getTranscriptionStatus.queryOptions(
+			{
+				id: mediaFileId!,
+			},
+			{
+				enabled: !!mediaFileId && transcriptionStatus === "processing",
+				refetchInterval: 3000, // Poll every 3 seconds
+			}
+		)
+	);
+
+	// Handle transcription status changes
+	useEffect(() => {
+		if (!transcriptionData) return;
+
+		if (
+			transcriptionData.status === "complete" &&
+			transcriptionData.transcript
+		) {
+			setTranscriptionStatus("complete");
+
+			// Transform transcript segments to display format
+			const transformedSegments =
+				transcriptionData.transcript.segments.map((seg: any) => ({
+					startTime: seg.start,
+					endTime: seg.end,
+					segment: seg.text,
+					isExtremist: false, // This will be set by analysis
+				}));
+
+			setSegments(transformedSegments);
+			toast.success("Transcription complete! 🎉", {
+				id: toastIdRef.current ?? undefined,
+			});
+		} else if (transcriptionData.status === "error") {
+			setTranscriptionStatus("error");
+			toast.error("Transcription failed", {
+				id: toastIdRef.current ?? undefined,
+			});
+		}
+	}, [transcriptionData]);
+
+	const handleDrop = async (files: File[]) => {
+		setTranscriptionStatus("uploading");
+		const toastId = toast.loading("Uploading file...");
+		toastIdRef.current = toastId;
+
+		try {
+			const result = await uploadFile(files[0]);
+
+			if (!result.success) {
+				toast.error("Upload failed", { id: toastId });
+				setTranscriptionStatus("error");
+				return;
+			}
+
+			setMediaFileId(result.file.id);
+			setAudioFile(files[0]);
+			recorderControls.setPreloadedAudioBlob(files[0]);
+			// recorderControls.startAudioPlayback();
+
+			setTranscriptionStatus("processing");
+			toast.loading("Transcribing audio... This may take a while", {
+				id: toastId,
+			});
+		} catch (error) {
+			toast.error("Something went wrong: " + error, { id: toastId });
+			setTranscriptionStatus("error");
+			console.log(error);
+		}
 	};
 
 	const handleError = (error: Error) => {
+		console.log(error);
 		toast.error(`Something went wrong: ${error.message}`);
 	};
 
@@ -52,49 +147,50 @@ export default function Home() {
 		return currentTime >= startTime && currentTime < endTime;
 	};
 
-	const segments = [
-		{
-			startTime: 0,
-			endTime: 4,
-			segment:
-				"Welcome everyone to today's discussion about community safety and security measures.",
-			isExtremist: false,
-		},
-		{
-			startTime: 4,
-			endTime: 8,
-			segment:
-				"We need to take immediate action against those who threaten our way of life and values.",
-			isExtremist: true,
-		},
-		{
-			startTime: 8,
-			endTime: 12,
-			segment:
-				"Education and dialogue are the best tools we have for building understanding between different groups.",
-		},
-		{
-			startTime: 12,
-			endTime: 16,
-			segment:
-				"They are the enemy and must be stopped by any means necessary before they destroy everything we hold dear.",
-			isExtremist: true,
-		},
-		{
-			startTime: 16,
-			endTime: 20,
-			segment:
-				"Let's focus on constructive solutions that bring people together rather than divide them.",
-		},
-		{
-			startTime: 20,
-			endTime: 24,
-			segment:
-				"Thank you for listening and remember to stay engaged in your local community initiatives.",
-		},
-	];
+	// const segments = [
+	// 	{
+	// 		startTime: 0,
+	// 		endTime: 4,
+	// 		segment:
+	// 			"Welcome everyone to today's discussion about community safety and security measures.",
+	// 		isExtremist: false,
+	// 	},
+	// 	{
+	// 		startTime: 4,
+	// 		endTime: 8,
+	// 		segment:
+	// 			"We need to take immediate action against those who threaten our way of life and values.",
+	// 		isExtremist: true,
+	// 	},
+	// 	{
+	// 		startTime: 8,
+	// 		endTime: 12,
+	// 		segment:
+	// 			"Education and dialogue are the best tools we have for building understanding between different groups.",
+	// 	},
+	// 	{
+	// 		startTime: 12,
+	// 		endTime: 16,
+	// 		segment:
+	// 			"They are the enemy and must be stopped by any means necessary before they destroy everything we hold dear.",
+	// 		isExtremist: true,
+	// 	},
+	// 	{
+	// 		startTime: 16,
+	// 		endTime: 20,
+	// 		segment:
+	// 			"Let's focus on constructive solutions that bring people together rather than divide them.",
+	// 	},
+	// 	{
+	// 		startTime: 20,
+	// 		endTime: 24,
+	// 		segment:
+	// 			"Thank you for listening and remember to stay engaged in your local community initiatives.",
+	// 	},
+	// ];
 
 	// Auto-scroll to active segment
+
 	useEffect(() => {
 		const activeIndex = segments.findIndex((seg) =>
 			isSegmentActive(seg.startTime, seg.endTime)
@@ -227,14 +323,37 @@ export default function Home() {
 					</CardContent>
 				</Card>
 			)}
-			<div className="flex justify-center gap-2">
-				<Button variant="gradient">
-					<Sparkles className="size-4" /> Start Analysis
-				</Button>
-				<Button variant="outline">
-					<Download className="size-4" /> Export Data (.json)
-				</Button>
-			</div>
+			{audioFile && (
+				<div className="flex flex-col items-center gap-4">
+					{/* Status indicator */}
+					{transcriptionStatus === "processing" && (
+						<div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+							<div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+							<span>Transcribing audio...</span>
+						</div>
+					)}
+					{transcriptionStatus === "error" && (
+						<div className="text-red-600 dark:text-red-400">
+							❌ Transcription failed
+						</div>
+					)}
+
+					<div className="flex justify-center gap-2">
+						<Button
+							variant="gradient"
+							disabled={transcriptionStatus !== "complete"}
+						>
+							<Sparkles className="size-4" /> Start Analysis
+						</Button>
+						<Button
+							variant="outline"
+							disabled={transcriptionStatus !== "complete"}
+						>
+							<Download className="size-4" /> Export Data (.json)
+						</Button>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }

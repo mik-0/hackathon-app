@@ -46,4 +46,24 @@ export const mediaFileRouter = router({
 			}
 			return { success: true, deletedId: input.id };
 		}),
-})
+
+	// READ: Get transcription status and data
+	getTranscriptionStatus: publicProcedure
+		.input(z.object({ id: z.string() }))
+		.query(async ({ input }) => {
+			const file = await MediaFile.findById(input.id).lean();
+			if (!file) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Media file not found",
+				});
+			}
+			return {
+				status: file.status,
+				transcript: file.transcript,
+				filename: file.filename,
+				fileType: file.fileType,
+				durationSec: file.durationSec,
+			};
+		}),
+});
