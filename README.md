@@ -1,7 +1,7 @@
 # Pastrypenguins - Frostflag
 
 ## Introduction
-Frostflag is a locally hostable, open-source and flexible tool for flagging hateful speech and extremist content in audio recordings. From an audio file, spoken text is extracted, relevant flagged text is highlighted and timestamps are provided for where a violation is found. The context model for what classifies as hate speech or extremist views is thoroughly grounded in definitions from organizing bodies like the UN and EU. 
+Frostflag is a locally hostable, open-source, and flexible tool for flagging hateful speech and extremist content in audio recordings. It extracts spoken text from an audio file, highlights relevant flagged text, and provides timestamps for where a violation is found. The context model for what classifies as hate speech or extremist views is thoroughly grounded in definitions from organizing bodies like the UN and EU. 
 
 
 ## Research and context background
