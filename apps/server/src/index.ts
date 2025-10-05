@@ -17,6 +17,11 @@ if (!fs.existsSync(UPLOAD_DIR)) {
 	fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
 
+import OpenAI from "openai";
+export const openai = new OpenAI({
+	apiKey: process.env.OPENAI_API_KEY,
+});
+
 // Supported MIME types
 const SUPPORTED_FORMATS: Record<string, string> = {
 	// Video formats
@@ -300,27 +305,17 @@ const app = new Elysia({ adapter: node() })
 				try {
 					console.log(`🎙️ Starting transcription for ${filename}...`);
 
-					const formData = new FormData();
-					const fileBuffer = fs.readFileSync(uploadedFilePath);
-					const blob = new Blob([fileBuffer], { type: mimeType });
+					const transcription =
+						await openai.audio.transcriptions.create({
+							file: fs.createReadStream(uploadedFilePath),
+							model: "whisper-1",
+							response_format: "verbose_json",
+						});
 
-					// FormData needs a filename as the third parameter
-					formData.append("file", blob, filename);
-
-					const transcriptRes = await fetch(
-						`${process.env.FAST_API_URL}/transcription/upload`,
-						{
-							method: "POST",
-							body: formData,
-						}
-					);
-
-					if (!transcriptRes.ok) {
-						const errorText = await transcriptRes.text();
+					if (!transcription) {
 						console.error(
 							"❌ Transcription failed:",
-							transcriptRes.status,
-							errorText
+							transcription
 						);
 
 						// Update media file status to error
@@ -330,13 +325,12 @@ const app = new Elysia({ adapter: node() })
 						return;
 					}
 
-					const transcript = await transcriptRes.json();
 					console.log("✅ Transcription complete for:", filename);
 
 					// Save transcript to database
 					await MediaFile.findByIdAndUpdate(mediaFileId, {
 						status: "complete",
-						transcript: transcript,
+						transcript: transcription,
 					});
 				} catch (error) {
 					console.error("❌ Transcription error:", error);
@@ -541,6 +535,51 @@ const app = new Elysia({ adapter: node() })
 			set.status = 500;
 			return {
 				error: "Streaming failed",
+				details: error instanceof Error ? error.message : "Unknown",
+			};
+		}
+	})
+	// ============================================
+	// SIMPLE FILE SERVING ENDPOINT
+	// ============================================
+	.get("/uploads/:id", async ({ params, set }) => {
+		try {
+			const mediaFile = await MediaFile.findById(params.id);
+
+			if (!mediaFile || !mediaFile.filePath) {
+				set.status = 404;
+				return { error: "File not found" };
+			}
+
+			const filePath = mediaFile.filePath;
+
+			// Check if file exists
+			if (!fs.existsSync(filePath)) {
+				set.status = 404;
+				return { error: "File not found on disk" };
+			}
+
+			// Determine MIME type
+			const ext = path.extname(filePath).toLowerCase();
+			const mimeType =
+				SUPPORTED_FORMATS[ext] || "application/octet-stream";
+
+			// Read the file
+			const fileBuffer = fs.readFileSync(filePath);
+
+			// Return the file with appropriate headers
+			return new Response(fileBuffer, {
+				headers: {
+					"Content-Type": mimeType,
+					"Content-Length": fileBuffer.length.toString(),
+					"Accept-Ranges": "bytes",
+				},
+			});
+		} catch (error) {
+			console.error("File serving error:", error);
+			set.status = 500;
+			return {
+				error: "Failed to serve file",
 				details: error instanceof Error ? error.message : "Unknown",
 			};
 		}

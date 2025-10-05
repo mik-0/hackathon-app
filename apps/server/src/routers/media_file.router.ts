@@ -60,6 +60,7 @@ export const mediaFileRouter = router({
 			}
 			return {
 				status: file.status,
+				processingStatus: file.processingStatus,
 				transcript: file.transcript,
 				filename: file.filename,
 				fileType: file.fileType,

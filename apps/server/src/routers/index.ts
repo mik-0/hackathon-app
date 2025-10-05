@@ -2,6 +2,7 @@ import { protectedProcedure, publicProcedure, router } from "../lib/trpc";
 import { studentRouter } from "./student.router";
 import { mediaFileRouter } from "./media_file.router";
 import z from "zod";
+import { processorRouter } from "./processor.router";
 
 export const appRouter = router({
 	healthCheck: publicProcedure.query(() => {
@@ -32,5 +33,6 @@ export const appRouter = router({
 	students: studentRouter,
 	// 📁 Media file endpoints under "mediaFiles.*"
 	mediaFiles: mediaFileRouter,
+	processor: processorRouter,
 });
 export type AppRouter = typeof appRouter;

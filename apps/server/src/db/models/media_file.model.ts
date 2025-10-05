@@ -11,6 +11,7 @@ export interface IMediaFile {
 	fileType: "audio" | "video";
 	durationSec?: number;
 	status: "in-progress" | "complete" | "error" | "processing";
+	processingStatus?: "idle" | "processing" | "complete" | "error";
 	language: string;
 	transcript?: {
 		language: string;
@@ -25,6 +26,7 @@ export interface IMediaFile {
 				end: number;
 				word: string;
 			}>;
+			category?: "EXTREMIST_SPEECH" | "BAD_LANGUAGE";
 		}>;
 	};
 	createdAt: Date;
@@ -42,6 +44,11 @@ const mediaFileSchema = new Schema<IMediaFile>(
 			type: String,
 			enum: ["in-progress", "complete", "error", "processing"],
 			default: "in-progress",
+		},
+		processingStatus: {
+			type: String,
+			enum: ["idle", "processing", "complete", "error"],
+			default: "idle",
 		},
 		language: { type: String, required: true, default: "en" },
 		transcript: { type: Schema.Types.Mixed },

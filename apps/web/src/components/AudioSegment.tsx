@@ -19,6 +19,7 @@ const AudioSegment = ({
 	isActive,
 	isExtremist,
 	onSeek,
+	category,
 }: {
 	startTime: number;
 	endTime: number;
@@ -26,6 +27,7 @@ const AudioSegment = ({
 	isActive: boolean;
 	isExtremist?: boolean;
 	onSeek?: () => void;
+	category?: "EXTREMIST_SPEECH" | "BAD_LANGUAGE" | null;
 }) => {
 	return (
 		<div
@@ -57,7 +59,7 @@ const AudioSegment = ({
 				{segment}
 			</div>
 
-			{isExtremist && (
+			{category === "EXTREMIST_SPEECH" && (
 				<div className="pt-2">
 					<Tooltip>
 						<TooltipTrigger>
@@ -72,6 +74,25 @@ const AudioSegment = ({
 						</TooltipTrigger>
 						<TooltipContent>
 							<p>Extremist content detected</p>
+						</TooltipContent>
+					</Tooltip>
+				</div>
+			)}
+			{category === "BAD_LANGUAGE" && (
+				<div className="pt-2">
+					<Tooltip>
+						<TooltipTrigger>
+							<IoIosWarning
+								size={16}
+								className={cn(
+									"min-w-[50px]",
+									isActive && "text-red-400",
+									!isActive && "text-red-300/50"
+								)}
+							/>
+						</TooltipTrigger>
+						<TooltipContent>
+							<p>Bad language detected</p>
 						</TooltipContent>
 					</Tooltip>
 				</div>

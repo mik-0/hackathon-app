@@ -15,7 +15,7 @@ interface WaveformSegmentOverlayProps {
 	startTime: number;
 	endTime: number;
 	text: string;
-	isExtremist: boolean;
+	category?: "EXTREMIST_SPEECH" | "BAD_LANGUAGE" | null;
 	startPercent: number;
 	widthPercent: number;
 	onSeek?: () => void;
@@ -25,14 +25,17 @@ const WaveformSegmentOverlay = ({
 	startTime,
 	endTime,
 	text,
-	isExtremist,
+	category,
 	startPercent,
 	widthPercent,
 	onSeek,
 }: WaveformSegmentOverlayProps) => {
 	const [isHovered, setIsHovered] = useState(false);
 
-	if (!isExtremist) return null;
+	if (!category) return null;
+
+	const isExtremist = category === "EXTREMIST_SPEECH";
+	const isBadLanguage = category === "BAD_LANGUAGE";
 
 	const handleClick = () => {
 		if (onSeek) {
@@ -42,7 +45,11 @@ const WaveformSegmentOverlay = ({
 
 	return (
 		<div
-			className="absolute top-0 bottom-0 bg-red-500/20 hover:bg-red-500/30 transition-colors cursor-pointer pointer-events-auto"
+			className={cn(
+				"absolute top-0 bottom-0 transition-colors cursor-pointer pointer-events-auto",
+				isExtremist && "bg-red-500/20 hover:bg-red-500/30",
+				isBadLanguage && "bg-orange-500/20 hover:bg-orange-500/30"
+			)}
 			style={{
 				left: `${startPercent}%`,
 				width: `${widthPercent}%`,
@@ -59,12 +66,26 @@ const WaveformSegmentOverlay = ({
 						transform: "translateX(-50%)",
 					}}
 				>
-					<Card className="w-64 shadow-lg border-red-500/50 bg-gray-900/95 backdrop-blur p-0">
+					<Card
+						className={cn(
+							"w-64 shadow-lg bg-gray-900/95 backdrop-blur p-0",
+							isExtremist && "border-red-500/50",
+							isBadLanguage && "border-orange-500/50"
+						)}
+					>
 						<CardContent className="p-4 space-y-2">
-							<div className="flex items-center gap-2 text-red-400">
+							<div
+								className={cn(
+									"flex items-center gap-2",
+									isExtremist && "text-red-400",
+									isBadLanguage && "text-orange-400"
+								)}
+							>
 								<IoIosWarning className="size-5" />
 								<span className="font-semibold text-sm">
-									Extremist Content Detected
+									{isExtremist &&
+										"Extremist Content Detected"}
+									{isBadLanguage && "Bad Language Detected"}
 								</span>
 							</div>
 							<div className="text-xs text-gray-400">
@@ -83,10 +104,19 @@ const WaveformSegmentOverlay = ({
 							<div className="pt-2 border-t border-gray-700">
 								<div className="flex items-center justify-between text-xs">
 									<span className="text-gray-400">
-										Confidence
+										Category
 									</span>
-									<span className="text-red-400 font-semibold">
-										High
+									<span
+										className={cn(
+											"font-semibold",
+											isExtremist && "text-red-400",
+											isBadLanguage && "text-orange-400"
+										)}
+									>
+										{category === "EXTREMIST_SPEECH" &&
+											"Extremist Speech"}
+										{category === "BAD_LANGUAGE" &&
+											"Bad Language"}
 									</span>
 								</div>
 							</div>
