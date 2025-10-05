@@ -25,7 +25,7 @@ class OllamaClassifier:
         print(f"Initializing Ollama classifier with model: {model_name}...")
         self.model_name = model_name
         self.ollama_url = "http://localhost:11434/api/generate"
-        
+
         # Test connection to Ollama
         try:
             response = requests.post(
@@ -44,12 +44,12 @@ class OllamaClassifier:
         except requests.exceptions.RequestException as e:
             print(f"⚠ Warning: Could not connect to Ollama: {e}")
             print("Make sure Ollama is running with: ollama serve")
-        
+
         # System prompt for classification
         self.system_prompt = """You are a content moderation AI. Analyze the given text and classify it as either NORMAL or ABUSIVE.
 
 NORMAL: Regular, non-offensive content including casual conversation, questions, statements, jokes without hate, etc.
-ABUSIVE: Content containing hate speech, harassment, threats, slurs, discriminatory language, or extreme offensive content.
+ABUSIVE: Content containing hate speech, harassment, threats, slurs, discriminatory language, or extreme offensive content. Be very careful and find even the minutest hint of swearing and bad language.
 
 Respond ONLY in this exact JSON format:
 {"class": "NORMAL", "confidence": 0.95, "reasoning": "brief explanation"}
@@ -60,7 +60,7 @@ Be conservative - only mark content as ABUSIVE if it clearly contains hate speec
 
     def classify_text(self, text):
         """Classify a single text segment using Ollama"""
-        
+
         prompt = f"""{self.system_prompt}
 
 Text to analyze: "{text}"
@@ -81,13 +81,13 @@ Classification:"""
                 },
                 timeout=30
             )
-            
+
             if response.status_code != 200:
                 raise Exception(f"Ollama API error: {response.status_code}")
-            
+
             result = response.json()
             response_text = result.get('response', '').strip()
-            
+
             # Try to parse JSON response
             try:
                 # Extract JSON from response (handle cases where model adds extra text)
@@ -97,15 +97,15 @@ Classification:"""
                 else:
                     # Fallback parsing if no JSON found
                     classification = self._fallback_parse(response_text, text)
-                
+
                 # Normalize class name
                 class_name = classification.get('class', 'NORMAL').upper()
                 if class_name not in ['NORMAL', 'ABUSIVE']:
                     class_name = 'NORMAL'
-                
+
                 confidence = float(classification.get('confidence', 0.5))
                 confidence = max(0.0, min(1.0, confidence))  # Clamp between 0 and 1
-                
+
                 return {
                     'class_type': class_name,
                     'class_id': 1 if class_name == 'ABUSIVE' else 0,
@@ -113,27 +113,27 @@ Classification:"""
                     'is_abusive': class_name == 'ABUSIVE',
                     'reasoning': classification.get('reasoning', '')
                 }
-                
+
             except (json.JSONDecodeError, ValueError) as e:
                 print(f"Failed to parse Ollama response: {response_text}")
                 # Fallback to keyword-based classification
                 return self._fallback_parse(response_text, text)
-                
+
         except requests.exceptions.Timeout:
             raise Exception("Ollama request timed out - model may be slow or unavailable")
         except requests.exceptions.RequestException as e:
             raise Exception(f"Failed to connect to Ollama: {str(e)}")
-    
+
     def _fallback_parse(self, response_text, original_text):
         """Fallback parser if JSON parsing fails"""
         response_lower = response_text.lower()
-        
+
         # Check if response indicates abusive content
         is_abusive = any(word in response_lower for word in ['abusive', 'hate', 'offensive', 'harassment'])
-        
+
         # Simple heuristic confidence based on strength of indicators
         confidence = 0.6 if is_abusive else 0.7
-        
+
         return {
             'class_type': 'ABUSIVE' if is_abusive else 'NORMAL',
             'class_id': 1 if is_abusive else 0,
@@ -155,7 +155,7 @@ class AnalysisResult(BaseModel):
     start: float
     end: float
     text: str
-    is_abusive: bool
+    isExtremist: bool
     class_type: str
     confidence: float
 
@@ -170,22 +170,22 @@ async def analyze(request: AnalysisRequest):
     """
     try:
         results = []
-        
+
         for segment in request.segments:
             classification = classifier.classify_text(segment.text)
-            
+
             result = AnalysisResult(
                 start=segment.start,
                 end=segment.end,
                 text=segment.text,
-                is_abusive=classification['is_abusive'],
+                isExtremist=classification['is_abusive'],
                 class_type=classification['class_type'],
                 confidence=classification['confidence']
             )
             results.append(result)
-        
+
         return results
-    
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
