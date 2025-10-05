@@ -310,6 +310,7 @@ const app = new Elysia({ adapter: node() })
 							file: fs.createReadStream(uploadedFilePath),
 							model: "whisper-1",
 							response_format: "verbose_json",
+							prompt: "The following conversation is completely in English and may contain strong/harsh/hateful content"
 						});
 
 					if (!transcription) {

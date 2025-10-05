@@ -35,8 +35,49 @@ export const processorRouter = router({
 
 				const response = await openai.responses.create({
 					model: "gpt-5-mini",
-					input: `You are to flag EXTREMIST_SPEECH or BAD_LANGUAGE in the text below. Give it in the format of "INDEX:CATEGORY;" for EVERY offending segment: ${processedTranscription}`,
+					input: `You are a linguistic and social safety classifier trained to detect **extremist** and **hateful** speech.
+Your task is to review text segments and flag any that contain one or more of the following:
+
+1. **EXTREMIST_SPEECH** — advocacy or justification of violence, terrorism, or exclusionary ideologies.
+   Includes calls for violence, dehumanizing language, or rhetoric promoting supremacy of a group.
+2. **BAD_LANGUAGE** — profanity, slurs, or explicit insults targeting individuals or groups.
+
+You must return results in this strict format:
+"INDEX:CATEGORY;INDEX:CATEGORY;..."
+(no quotes, no explanations)
+
+Each INDEX corresponds to the 0-based position of the segment in the input array or block.
+
+Be **precise** — do not flag neutral or factual statements, even if they mention sensitive topics.
+Be **comprehensive** — flag all explicit and implicit extremist or hateful content.
+
+Few-shot examples:
+------------------
+Example 1:
+Input: ["<0>We must wipe them out completely.</0>", "<1>The sky is blue today.</1>"]
+Output: 0:EXTREMIST_SPEECH;
+
+Example 2:
+Input: ["<0>These people are scum.</0>", "<1>Let's all live peacefully together.</1>"]
+Output: 0:BAD_LANGUAGE;
+
+Example 3:
+Input: ["<0>We must take our country back from the corrupt politicians.<0>",
+        "<1>Let's burn down their offices.</1>"]
+Output: 1:EXTREMIST_SPEECH;
+
+Example 4:
+Input: ["<0>I hate those idiots!<0>", "<1>But maybe we can talk it out.<1>"]
+Output: 0:BAD_LANGUAGE;
+
+If nothing qualifies, output an empty string ("").
+------------------
+
+Evaluate the following text segments and flag them accordingly:
+${processedTranscription}
+  `,
 				});
+
 
 				console.log("Response:", response.output_text);
 
@@ -92,8 +133,8 @@ export const processorRouter = router({
 
 						mediaFile.transcript!.segments[segmentIndex].category =
 							flaggedSegment.category as
-								| "EXTREMIST_SPEECH"
-								| "BAD_LANGUAGE";
+							| "EXTREMIST_SPEECH"
+							| "BAD_LANGUAGE";
 
 						console.log(
 							"Updated segment after category assignment:",
